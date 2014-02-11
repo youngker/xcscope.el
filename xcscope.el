@@ -520,6 +520,67 @@ It is designed to answer questions like:
   :prefix "cscope-"
   :group 'tools)
 
+(defcustom abbreviate-filename 79
+  "Abbreviate filename"
+  :group 'cscope
+  :type 'integer)
+
+(defcustom opengrok-jar "/Users/youngker/.emacs.d/site-lisp/opengrok/opengrok/opengrok.jar"
+  "The location of file `opengrok.jar' containing the OpenGrok byte code."
+  :group 'cscope
+  :type 'string)
+
+(defcustom opengrok-ctags-command "/usr/local/bin/ctags"
+  "Directory in which Exuberant Ctags lives."
+  :group 'cscope
+  :type 'string)
+
+(defcustom opengrok-search-options (list
+                                     "-Xms128m"
+                                     "-Xmx1024m"
+                                     "-cp"
+                                     opengrok-jar
+                                     "org.opensolaris.opengrok.search.Search")
+  "OpenGrok search options"
+  :type '(repeat string)
+  :group 'cscope)
+
+(defcustom opengrok-indexer-ignored-directories '("-i" "CVS"
+                                                "-i" "RCS"
+                                                "-i" "SCCS"
+                                                "-i" ".git"
+                                                "-i" ".hg"
+                                                "-i" ".bzr"
+                                                "-i" ".cdv"
+                                                "-i" ".pc"
+                                                "-i" ".svn"
+                                                "-i" "_MTN"
+                                                "-i" "_darcs"
+                                                "-i" "_sgbak"
+                                                "-i" "debian"
+                                                "-i" ".opengrok")
+  "List of directory names that should be ignored when building a
+cscope index. These are mostly version-control directories"
+  :type '(repeat string)
+  :group 'cscope)
+
+(defcustom opengrok-indexer-suffixes '("-I" "*.c"
+                                       "-I" "*.h"
+                                       "-I" "*.cpp"
+                                       "-I" "*.hpp"
+                                       "-I" "*.cc"
+                                       "-I" "*.hh"
+                                       "-I" "*.m"
+                                       "-I" "*.xml"
+                                       "-I" "*.mk"
+                                       "-I" "*.py"
+                                       "-I" "*.rb"
+                                       "-I" "*.java"
+                                       "-I" "*.js"
+                                       "-I" "*.el")
+  "List of file suffixes to index."
+  :type '(repeat string)
+  :group 'cscope)
 
 (defcustom cscope-option-include-directories nil
   "The -I option in cscope: add these directories to the list of
@@ -690,7 +751,7 @@ done.
 			       :tag "Optional cscope command-line arguments")
 		       ))
   :group 'cscope)
-(defcustom cscope-name-line-width -30
+(defcustom cscope-name-line-width 0
   "The width of the combined \"function name:line number\" field in the
 cscope results buffer.  If negative, the field is left-justified."
   :type 'integer
@@ -719,7 +780,7 @@ rounded up to keep whole sets of cscope output"
   :type 'integer
   :group 'cscope)
 
-(defcustom cscope-program "cscope"
+(defcustom cscope-program "java"
   "The pathname of the cscope executable to use."
   :type 'string
   :group 'cscope)
@@ -731,11 +792,24 @@ rounded up to keep whole sets of cscope output"
   :group 'cscope)
 
 
-(defcustom cscope-database-file "cscope.out"
+(defcustom cscope-database-file ".opengrok/configuration.xml"
   "The name of the cscope database file."
   :type 'string
   :group 'cscope)
 
+(defcustom opengrok-indexer-options (list 
+                                     "-Xms128m"
+                                     "-Xmx1024m"
+                                     "-cp"
+                                     opengrok-jar
+                                     "org.opensolaris.opengrok.index.Indexer"
+                                     "-c"
+                                     opengrok-ctags-command
+                                     "-W"
+                                     cscope-database-file)
+  "OpenGrok indexer options"
+  :type '(repeat string)
+  :group 'cscope)
 
 (defcustom cscope-edit-single-match t
   "If non-nil and only one match is output, edit the matched location."
@@ -854,7 +928,7 @@ be removed by quitting the cscope buffer."
 
 
 (defconst cscope-result-separator
-  "===============================================================================\n"
+  "================================================================================\n"
   "Line of text to use as a visual separator.
 Must end with a newline. Must work as a regex without quoting")
 
@@ -883,7 +957,7 @@ at the start of a line, so the leading ^ must be omitted")
 
 (defface cscope-file-face
   '((((class color) (background dark))
-     (:foreground "yellow"))
+     (:foreground "LightSkyBlue"))
     (((class color) (background light))
      (:foreground "blue"))
     (t (:bold t)))
@@ -893,7 +967,7 @@ at the start of a line, so the leading ^ must be omitted")
 
 (defface cscope-function-face
   '((((class color) (background dark))
-     (:foreground "cyan"))
+     (:foreground "darkorange3"))
     (((class color) (background light))
      (:foreground "magenta"))
     (t (:bold t)))
@@ -903,7 +977,7 @@ at the start of a line, so the leading ^ must be omitted")
 
 (defface cscope-line-number-face
   '((((class color) (background dark))
-     (:foreground "red"))
+     (:foreground "SeaGreen2"))
     (((class color) (background light))
      (:foreground "red"))
     (t (:bold t)))
@@ -912,18 +986,27 @@ at the start of a line, so the leading ^ must be omitted")
 
 (defface cscope-mouse-face
   '((((class color) (background dark))
-     (:foreground "white" :background "blue"))
+     (:foreground "white" :background "dodgerblue4"))
     (((class color) (background light))
      (:foreground "white" :background "blue"))
     (t (:bold nil)))
   "Face used when mouse pointer is within the region of an entry."
   :group 'cscope)
 
+(defface cscope-line-highlight-face
+  '((((class color) (background dark))
+     (:foreground "white" :background "dodgerblue4"))
+    (((class color) (background light))
+     (:foreground "white" :background "blue"))
+    (t (:bold nil)))
+  "Face used to highlight the separator in the *cscope* buffer."
+  :group 'cscope)
+
 (defface cscope-separator-face
   '((((class color) (background dark))
-     (:bold t :overline t :underline t :foreground "red"))
+     (:bold t :foreground "SeaGreen2"))
     (((class color) (background light))
-     (:bold t :overline t :underline t :foreground "red"))
+     (:bold t :foreground "red"))
     (t (:bold t)))
   "Face used to highlight the separator in the *cscope* buffer."
   :group 'cscope)
@@ -946,8 +1029,8 @@ selected for it")
         (progn
           (define-key map [button2]   'cscope-mouse-select-entry-other-window)
           (define-key map [(shift button2)] 'cscope-mouse-select-entry-inplace))
-      (define-key map [mouse-2]   'cscope-mouse-select-entry-other-window)
-      (define-key map [S-mouse-2] 'cscope-mouse-select-entry-inplace))
+      (define-key map [mouse-1]   'cscope-mouse-select-entry-other-window)
+      (define-key map [mouse-2] 'cscope-mouse-select-entry-inplace))
 
     ;; \r is for the text-mode console emacs
     (define-key map [return] 'cscope-select-entry-other-window)
@@ -1025,13 +1108,15 @@ selected for it")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar cscope-output-buffer-name "*cscope*"
+(defvar cscope-output-buffer-name "*opengrok*"
   "The name of the cscope output buffer.")
 
 
-(defvar cscope-info-buffer-name "*cscope-info*"
+(defvar cscope-info-buffer-name "*opengrok-info*"
   "The name of the cscope information buffer.")
 
+(defvar opengrok-indexing-buffer-name "*opengrok-indexing-buffer*"
+  "The name of the buffer to use for displaying indexing status/progress.")
 
 (defvar cscope-process nil
   "The current cscope process.")
@@ -2143,7 +2228,7 @@ This function sets up face and the fuzzy-search string"
   ;; <- cscope-name-line-width ->
   ;; `format' of Emacs doesn't have "*s" spec.
   (let ((str (format (format "%%%ds %%s" cscope-name-line-width)
-                     (format "%s[%s]" func-name line-number) line))
+                     (format "%s:" line-number) line))
         (search-type   (car cscope-previous-user-search))
         (search-symbol (cadr cscope-previous-user-search))
 	beg end)
@@ -2160,11 +2245,12 @@ This function sets up face and the fuzzy-search string"
 
     ;; now I set up the face properties
     (when cscope-use-face
-      (setq end (length func-name))
-      (put-text-property 0 end 'face 'cscope-function-face str)
+      (setq end (length line-number))
+      (put-text-property 0 end 'face 'cscope-line-number-face str)
       (setq beg (1+ end)
-            end (+ beg (length line-number)))
-      (put-text-property beg end 'face 'cscope-line-number-face str)
+            end (+ beg (length line)))
+      (put-text-property beg (1+ end) 'face 'cscope-function-face str)
+      (setq end (- end (length line)))
 
       (when (not (string= line "<unknown>"))
         (let* ((search-type   (car cscope-previous-user-search))
@@ -2199,7 +2285,7 @@ This function sets up face and the fuzzy-search string"
                            highlight-search-re
                            str (1+ end))))
               (when start
-                (put-text-property start (match-end 0) 'face 'bold str)))))))
+                (put-text-property start (match-end 0) 'face 'cscope-line-highlight-face str)))))))
 
     str))
 
@@ -2261,7 +2347,7 @@ using the mouse."
                           ;; necessary.
                           (if cscope-last-file (insert "\n"))
                           ;; Insert the file name
-                          (setq str (concat "*** " file ":"))
+                          (setq str (concat file ":"))
                           (if cscope-use-face
                               (put-text-property 0 (length str)
                                                  'face 'cscope-file-face
@@ -2269,6 +2355,24 @@ using the mouse."
                           (cscope-insert-with-text-properties
                            str
                            (expand-file-name file))
+                          (let* ((start (- (point) (length file)))
+                                 (end (point))
+                                 (amount (if (numberp abbreviate-filename)
+                                             (- (- end start) abbreviate-filename)
+                                           999))
+                                 (advance-word (lambda ()
+                                                 "Return the length of the text made invisible."
+                                                 (let ((wend (min end (progn (forward-word 1) (point))))
+                                                       (wbeg (max start (progn (backward-word 1) (point)))))
+                                                   (goto-char wend)
+                                                   (if (<= (- wend wbeg) 1)
+                                                       0
+                                                     (put-text-property (1+ wbeg) wend 'invisible t)
+                                                     (1- (- wend wbeg)))))))
+                            (goto-char start)
+                            (while (and (> amount 0) (> end (point)))
+                              (decf amount (funcall advance-word)))
+                            (goto-char end))
                           (insert "\n")))
 
                     (if cscope-first-match-point
@@ -2391,7 +2495,6 @@ using the mouse."
     (save-excursion
       (catch 'finished
 	(set-buffer outbuf)
-	(setq options '("-L"))
 	(while (and (not done) cscope-search-list)
 	  (setq next-item (car cscope-search-list)
 		cscope-search-list (cdr cscope-search-list)
@@ -2466,7 +2569,8 @@ using the mouse."
                   "\n\n"))
 	;; Add the correct database file to search
 	(setq options (cons base-database-file-name options))
-	(setq options (cons "-f" options))
+	(setq options (cons "-R" options))
+        (setq options (append opengrok-search-options options))
 	(setq cscope-output-start (point))
 	(setq default-directory cscope-directory)
 
@@ -2507,7 +2611,7 @@ this is."
                      (get-text-property (point) 'cscope-directory)))))
           (msg (concat basemsg " "
                        (cscope-boldify-if-needed symbol)))
-          (args (list (format "-%d" search-id) symbol)))
+          (args (list search-id symbol)))
     (if cscope-process
 	(error "A cscope search is still in progress -- only one at a time is allowed"))
     (if (eq outbuf old-buffer) ;; In the *cscope* buffer.
@@ -2572,11 +2676,16 @@ this is."
   "The string returned by the indexer. This receives the indexer
   output as it comes over time")
 
-(defun cscope-display-message-or-buffer (message buffer)
+(defun cscope-display-message-or-buffer (message buffer refresh)
   "Calls `display-message-or-buffer' in GNU emacs. In xemacs this
 isn't available, so it simply displays the MESSAGE in the BUFFER"
-
-  (if (not cscope-running-in-xemacs) (display-message-or-buffer message buffer)
+  (if (not cscope-running-in-xemacs)
+      (with-current-buffer (get-buffer-create buffer)
+        (when refresh
+          (erase-buffer))
+        (goto-char (point-max))
+        (insert message)
+        (display-buffer (current-buffer)))
     (with-current-buffer (get-buffer-create buffer)
       (erase-buffer)
       (insert message)
@@ -2589,28 +2698,37 @@ isn't available, so it simply displays the MESSAGE in the BUFFER"
   message in a buffer or the echo area"
 
   ;; add the new string
-  (setq cscope-indexing-status-string
-        (concat cscope-indexing-status-string output))
+  (setq cscope-indexing-status-string output)
 
   ;; and display
-  (cscope-display-message-or-buffer cscope-indexing-status-string "*cscope-indexing-buffer*"))
+  (cscope-display-message-or-buffer cscope-indexing-status-string opengrok-indexing-buffer-name nil))
 
 (defun cscope-unix-index-files-sentinel (process event)
   "Simple sentinel to print a message saying that indexing is finished."
   (setq cscope-indexing-status-string
-        (concat cscope-indexing-status-string
-                cscope-result-separator
+        (concat cscope-result-separator
                 "\n"
                 (if (equal event "finished\n")
                     "Indexing finished\n"
                   (concat "Indexing process received signal: " event "Stopping indexing"))))
 
-  (cscope-display-message-or-buffer cscope-indexing-status-string "*cscope-indexing-buffer*")
+  (cscope-display-message-or-buffer cscope-indexing-status-string opengrok-indexing-buffer-name nil)
   (delete-process process)
   (setq cscope-unix-index-process nil)
   (setq cscope-indexing-status-string nil))
 
-(defun cscope-make-index-command (dir only-create-list-of-files)
+(defun opengrok-make-index-command (dir)
+  "Return a string that is a shell script that runs the opengrok indexer"
+  (append 
+   opengrok-indexer-options
+   '("-d") 
+   (list (concat dir ".opengrok"))
+   '("-s") 
+   (list dir)
+   opengrok-indexer-suffixes
+   opengrok-indexer-ignored-directories))
+
+(defun cscope-make-index-command (dir only-create-list-of-files top-directory)
   "Return a string that is a shell script that runs the cscope
 indexer"
 
@@ -2681,15 +2799,15 @@ indexer"
     (setq cscope-unix-index-process
           (let* ((default-directory (cscope-canonicalize-directory top-directory))
                  (index-command
-                  (cscope-make-index-command (if cscope-use-relative-paths
-                                                 "." default-directory)
-                                             only-create-list-of-files)))
+                  (opengrok-make-index-command default-directory)))
             ;; Communicate with a pipe. Slightly more efficient than
             ;; a TTY
             (let ((process-connection-type nil))
-              (funcall cscope-start-file-process "cscope-indexer"
-                       nil
-                       "sh" "-c" index-command))))
+              (apply cscope-start-file-process "cscope-indexer" nil
+                     (shell-quote-argument cscope-program)
+                     index-command))))
+
+    (cscope-display-message-or-buffer cscope-indexing-status-string opengrok-indexing-buffer-name t)    
     (set-process-filter cscope-unix-index-process 'cscope-unix-index-files-filter)
     (set-process-sentinel cscope-unix-index-process
                           'cscope-unix-index-files-sentinel)
@@ -2878,7 +2996,7 @@ file."
 		(cscope-prompt-for-symbol "Find this symbol " nil nil t)
 		))
   (setq cscope-previous-user-search `(cscope-find-this-symbol ,symbol))
-  (cscope-call "Finding symbol:" 0 symbol)
+  (cscope-call "Finding symbol:" "-r" symbol)
   )
 
 
@@ -2888,7 +3006,7 @@ file."
 		(cscope-prompt-for-symbol "Find this global definition " nil nil t)
 		))
   (setq cscope-previous-user-search `(cscope-find-global-definition ,symbol))
-  (cscope-call "Finding global definition:" 1 symbol)
+  (cscope-call "Finding global definition:" "-d" symbol)
   )
 
 
@@ -2929,7 +3047,7 @@ file."
 		(cscope-prompt-for-symbol "Find this text string " nil t nil)
 		))
   (setq cscope-previous-user-search `(cscope-find-this-text-string ,symbol))
-  (cscope-call "Finding text string:" 4 symbol)
+  (cscope-call "Finding text string:" "-f" symbol)
   )
 
 
@@ -2952,7 +3070,7 @@ file."
 		))
 
   (setq cscope-previous-user-search `(cscope-find-this-file ,symbol))
-  (cscope-call "Finding file:" 7 symbol)
+  (cscope-call "Finding file:" "-p" symbol)
   )
 
 
@@ -2964,7 +3082,7 @@ file."
 		   "Find files #including this file " t nil nil))
 		))
   (setq cscope-previous-user-search `(cscope-find-files-including-file ,symbol))
-  (cscope-call "Finding files #including file:" 8 symbol)
+  (cscope-call "Finding files #including file:" "-h" symbol)
   )
 
 
